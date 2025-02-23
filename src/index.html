@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <title>ARKit Model Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #f5f5f5;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .ar-button {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Progress bar styles */
+        .progress-bar {
+            display: block;
+            width: 33%;
+            height: 10%;
+            max-height: 2px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate3d(-50%, -50%, 0);
+            border-radius: 25px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar.hide {
+            visibility: hidden;
+            transition: visibility 0.3s;
+        }
+
+        .update-bar {
+            background-color: rgba(0, 123, 255, 0.9);
+            width: 0%;
+            height: 100%;
+            border-radius: 25px;
+            float: left;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">Yükleniyor...</div>
+
+    <model-viewer
+        src="./assets/catalog/sign (3).glb"
+        ios-src="./assets/catalog/sign (3).usdz"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        shadow-intensity="1"
+        shadow-softness="1"
+        exposure="1"
+        environment-image="neutral"
+        camera-orbit="0deg 75deg 2m"
+        min-camera-orbit="auto auto auto"
+        max-camera-orbit="auto auto auto"
+        interaction-prompt="auto"
+        ar-placement="floor"
+        ar-scale="0.5"
+        loading="eager"
+        reveal="auto"
+        style="background-color: #f5f5f5;">
+
+        <button slot="ar-button" class="ar-button">
+            AR'da Görüntüle
+        </button>
+
+        <div class="progress-bar" slot="progress-bar">
+            <div class="update-bar"></div>
+        </div>
+    </model-viewer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modelViewer = document.querySelector('model-viewer');
+            const loading = document.getElementById('loading');
+
+            // Yükleme durumunu göster
+            loading.style.display = 'block';
+
+            // Model yüklendiğinde
+            modelViewer.addEventListener('load', () => {
+                loading.style.display = 'none';
+                console.log('Model başarıyla yüklendi');
+            });
+
+            // Yükleme hatası durumunda
+            modelViewer.addEventListener('error', () => {
+                loading.textContent = 'Model yüklenemedi!';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 2000);
+                console.error('Model yüklenirken hata oluştu');
+            });
+
+            // AR modu başladığında
+            modelViewer.addEventListener('ar-status', (event) => {
+                if (event.detail.status === 'session-started') {
+                    console.log('AR modu başlatıldı');
+                }
+            });
+
+            // Yükleme progress barı
+            const onProgress = (event) => {
+                const progressBar = event.target.querySelector('.progress-bar');
+                const updatingBar = event.target.querySelector('.update-bar');
+                updatingBar.style.width = `${event.detail.totalProgress * 100}%`;
+
+                if (event.detail.totalProgress === 1) {
+                    progressBar.classList.add('hide');
+                } else {
+                    progressBar.classList.remove('hide');
+                    if (event.detail.totalProgress === 0) {
+                        event.target.querySelector('.center-pre-prompt').classList.add('hide');
+                    }
+                }
+            };
+            modelViewer.addEventListener('progress', onProgress);
+        });
+    </script>
+</body>
+</html>
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <title>Three.js Küp Export</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #exportButton {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #exportButton:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <button id="exportButton">GLB Olarak İndir</button>
+    <script type="module" src="/script.js"></script>
+</body>
+</html> -->
