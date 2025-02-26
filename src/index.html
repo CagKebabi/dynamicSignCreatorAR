@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <title>Three.js Küp Export</title>
+    <title>Dynamic Sign Creator AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -23,11 +24,32 @@
         #exportButton:hover {
             background: #45a049;
         }
+        #exportUsdzButton {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 20px;
+        }
+        #exportUsdzButton:hover {
+            background: #45a049;
+        }
     </style>
     <script type="module" src="/script.js"></script>
 </head>
 <body>
-    <button id="exportButton">GLB Olarak Export Et</button>
+    <div id="gui-container"></div>
+    <div class="button-container">
+        <button id="exportButton">GLB Olarak Export Et</button>
+        <button id="exportUsdzButton">USDZ Olarak Export Et</button>
+    </div>
 </body>
 </html>
 
@@ -192,6 +214,3 @@
     </script>
 </body>
 </html> -->
-
-
-

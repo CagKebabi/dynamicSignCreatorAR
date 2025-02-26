@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+import { USDZExporter } from 'three/examples/jsm/exporters/USDZExporter.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FontLoader } from 'three/examples/jsm/Addons.js';
 import { TextGeometry } from 'three/examples/jsm/Addons.js';
@@ -56,7 +57,7 @@ const textureConfig = {
 const config = {
     // Tabela kontrolleri
     sign: {
-        width: 5,
+        width: 6.5,
         height: 2,
         depth: 0.2,
         color: '#2244aa',
@@ -72,6 +73,26 @@ const config = {
             z: 0
         }
     },
+    logo: {
+        color: '#ffffff',
+        roughness: 0.5,
+        metalness: 0.5,
+        rotation: {
+            x: Math.PI / 2,
+            y: 0,
+            z: 0
+        },
+        position: {
+            x: -2.2,
+            y: 0,
+            z: 0.18
+        },
+        scale: {
+            x: 1,
+            y: 1,
+            z: 1
+        }
+    },
     // Yazı kontrolleri
     text: {
         content: 'MARKET',
@@ -79,7 +100,7 @@ const config = {
         height: 0.01,
         color: '#ffffff',
         position: {
-            x: 0,
+            x: 0.9,
             y: -0.3,
             z: 0.1
         },
@@ -307,6 +328,30 @@ signFolder.add(config.sign, 'depth', 0.1, 2).onChange(updateSignGeometry);
 signFolder.addColor(config.sign, 'color').onChange(updateSignMaterial);
 signFolder.add(config.sign, 'shininess', 0, 100).onChange(updateSignMaterial);
 
+// Logo kontrolleri
+const logoFolder = gui.addFolder('Logo');
+logoFolder.addColor(config.logo, 'color').onChange(updateLogoMaterial);
+logoFolder.add(config.logo, 'roughness', 0, 1).onChange(updateLogoMaterial);
+logoFolder.add(config.logo, 'metalness', 0, 1).onChange(updateLogoMaterial);
+
+// Logo rotasyon kontrolleri
+const logoRotationFolder = logoFolder.addFolder('Rotasyon');
+logoRotationFolder.add(config.logo.rotation, 'x', -Math.PI, Math.PI).onChange(updateLogoRotation);
+logoRotationFolder.add(config.logo.rotation, 'y', -Math.PI, Math.PI).onChange(updateLogoRotation);
+logoRotationFolder.add(config.logo.rotation, 'z', -Math.PI, Math.PI).onChange(updateLogoRotation);
+
+// Logo scale kontrolleri
+const logoScaleFolder = logoFolder.addFolder('Scale');
+logoScaleFolder.add(config.logo.scale, 'x', 0.1, 3).onChange(updateLogoScale);
+logoScaleFolder.add(config.logo.scale, 'y', 0.1, 3).onChange(updateLogoScale);
+logoScaleFolder.add(config.logo.scale, 'z', 0.1, 5).onChange(updateLogoScale);
+
+// Logo pozisyon kontrolleri
+const logoPositionFolder = logoFolder.addFolder('Pozisyon');
+logoPositionFolder.add(config.logo.position, 'x', -5, 5).onChange(updateLogoPosition);
+logoPositionFolder.add(config.logo.position, 'y', -5, 5).onChange(updateLogoPosition);
+logoPositionFolder.add(config.logo.position, 'z', -5, 5).onChange(updateLogoPosition);
+
 // Tabela pozisyon kontrolleri
 const signPositionFolder = signFolder.addFolder('Pozisyon');
 signPositionFolder.add(config.sign.position, 'x', -5, 5).onChange(updateSignPosition);
@@ -389,13 +434,47 @@ function updateSignRotation() {
     );
 }
 
+function updateLogoMaterial() {
+    logo.material.color.setStyle(config.logo.color);
+    logo.material.roughness = config.logo.roughness;
+    logo.material.metalness = config.logo.metalness;
+    logo.material.needsUpdate = true;
+}
+
+function updateLogoRotation() {
+    logo.rotation.set(
+        config.logo.rotation.x,
+        config.logo.rotation.y,
+        config.logo.rotation.z
+    );
+}
+
+function updateLogoScale() {
+    logo.scale.set(config.logo.scale.x, config.logo.scale.y, config.logo.scale.z);
+}
+
+function updateLogoPosition() {
+    logo.position.set(
+        config.logo.position.x,
+        config.logo.position.y,
+        config.logo.position.z
+    );
+}
+
 function updateText() {
     const textGeometry = new TextGeometry(config.text.content, {
         font: currentFont, // currentFont değişkenini font yüklendiğinde tanımlamalısınız
         size: config.text.size,
         height: config.text.height,
-        curveSegments: 12,
-        bevelEnabled: false
+        // font: font,
+        // size: 0.8,            // yazının boyutu
+        // height: 0.01,         // derinliği çok küçük bir değere ayarladık
+        curveSegments: 12,    // eğri kalitesi
+        bevelEnabled: false,  // bevel'i kapattık
+        bevelThickness: 0,    // bevel kalınlığı 0
+        bevelSize: 0,         // bevel boyutu 0
+        bevelOffset: 0,       // bevel offset'i 0
+        bevelSegments: 0      // bevel segmentleri 0
     });
     
     const textMesh = sign.children[0];
@@ -475,19 +554,45 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 // Tabela için geometri oluşturma
-const signGeometry = new THREE.BoxGeometry(5, 2, 0.2);
+const signGeometry = new THREE.BoxGeometry(6.5, 2, 0.2);
 // const signMaterial = new THREE.MeshPhongMaterial({ 
 //     color: 0x2244aa,
 //     specular: 0x555555,
 //     shininess: 30
 // });
-const material = new THREE.MeshBasicMaterial({ 
+const material = new THREE.MeshStandardMaterial({ 
     color: config.sign.color,
     roughness: textureConfig.roughness,
     metalness: textureConfig.metalness
 });
 const sign = new THREE.Mesh(signGeometry, material);
 scene.add(sign);
+
+// Tabela Logosu için geometri oluşturma
+const logoGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 32); // Çap: 0.7, Derinlik: 0.2
+const logoMaterial = new THREE.MeshStandardMaterial({
+    color: config.logo.color,
+    roughness: textureConfig.roughness,
+    metalness: textureConfig.metalness
+});
+
+// Logo geometrisini merkezde oluştur
+logoGeometry.scale(1, 1, 1); // Başlangıç ölçeği 1 olsun, GUI ile kontrol edeceğiz
+
+// Logo mesh'ini oluştur
+const logo = new THREE.Mesh(logoGeometry, logoMaterial);
+
+// Logo'yu istenen pozisyona taşı
+logo.position.set(config.logo.position.x, config.logo.position.y, config.logo.position.z);
+// Başlangıç scale değerlerini ayarla
+logo.scale.set(config.logo.scale.x, config.logo.scale.y, config.logo.scale.z);
+logo.rotation.set(
+    config.logo.rotation.x,
+    config.logo.rotation.y,
+    config.logo.rotation.z
+);
+
+scene.add(logo);
 
 // GUI'ye texture kontrollerini ekle
 addTextureControls(gui, material);
@@ -527,7 +632,7 @@ let currentFont
 const loader = new FontLoader();
 loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
     currentFont = font; // Global değişkene font'u kaydet
-    const textGeometry = new TextGeometry('MARKET', {
+    const textGeometry = new TextGeometry(config.text.content, {
         font: font,
         size: config.text.size,
         height: config.text.height,
@@ -554,10 +659,10 @@ loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json
     // Scale ile derinliği kontrol et
     textMesh.scale.z = 0.005;  // Z ekseni boyunca ölçeklendirme
     
-    // Yazıyı merkeze hizalama
+    // Yazıyı yeniden merkeze hizala
     textGeometry.computeBoundingBox();
     const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
-    textMesh.position.x = -textWidth / 2;
+    textMesh.position.x = -textWidth + 25;
     textMesh.position.y = -0.3;
     textMesh.position.z = 0.1;  // tabelanın biraz önüne çıkardık
 
@@ -620,80 +725,117 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// GLB export fonksiyonu
-async function exportGLB() {
-    try {
-        console.log('Export başlatılıyor...');
-        
-        // Yeni bir scene oluştur
-        const exportScene = new THREE.Scene();
-        console.log('Export scene oluşturuldu');
-        
-        // Küpü kopyala
-        const cubeCopy = sign.clone();
-        exportScene.add(cubeCopy);
-        console.log('Küp kopyalandı ve eklendi');
-        
-        // Işığı kopyala ve target'ı ayarla
-        const lightCopy = mainLight.clone();
-        const targetCopy = new THREE.Object3D();
-        targetCopy.position.set(0, 0, -1);
-        lightCopy.target = targetCopy;
-        lightCopy.add(targetCopy);
-        exportScene.add(lightCopy);
-        console.log('Işık kopyalandı ve eklendi');
-
-        // GLTFExporter oluştur
-        const exporter = new GLTFExporter();
-        console.log('Exporter oluşturuldu');
-
-        // Promise olarak export işlemini yap
-        const glbData = await new Promise((resolve, reject) => {
-            exporter.parse(
-                exportScene,
-                (result) => {
-                    localStorage.setItem('glbFile',result)
-                    if (result instanceof ArrayBuffer) {
-                        console.log('Export başarılı, buffer boyutu:', result.byteLength);
-                        resolve(result);
-                        console.log(localStorage.getItem('glbFile'));
-                        
-                    } else {
-                        reject(new Error('Export edilen veri ArrayBuffer değil'));
-                    }
-                },
-                (error) => {
-                    console.error('Export hatası:', error);
-                    reject(error);
-                },
-                { binary: true }
-            );
-        });
-
-        // Dosyayı kaydet
-        const blob = new Blob([glbData], { type: 'application/octet-stream' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'sign.glb';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        console.log('Dosya indirme başlatıldı');
-
-    } catch (error) {
-        console.error('Export işlemi sırasında hata:', error);
-        alert('GLB export işlemi sırasında bir hata oluştu: ' + error.message);
-    }
-}
-
 // Export butonunu bul ve event listener ekle
 const exportButton = document.getElementById('exportButton');
+const exportUsdzButton = document.getElementById('exportUsdzButton');
+
 if (exportButton) {
     exportButton.addEventListener('click', exportGLB);
-    console.log('Export butonu event listener eklendi');
 } else {
     console.error('Export butonu bulunamadı!');
 }
 
+if (exportUsdzButton) {
+    exportUsdzButton.addEventListener('click', exportUSDZ);
+} else {
+    console.error('Export USDZ butonu bulunamadı!');
+}
 
+// GLB export fonksiyonu
+async function exportGLB() {
+    const exportScene = new THREE.Scene();
+    exportScene.background = scene.background;
 
+    try {
+        // Tabela kopyala
+        const cubeCopy = sign.clone();
+        exportScene.add(cubeCopy);
+        console.log('Küp kopyalandı ve eklendi');
+        
+        // Logo kopyala
+        const logoCopy = logo.clone();
+        exportScene.add(logoCopy);
+        console.log('Logo kopyalandı ve eklendi');
+        
+        // Işığı kopyala ve target'ı ayarla
+        const lightCopy = mainLight.clone();
+        const targetCopy = new THREE.Object3D();
+        targetCopy.position.set(0, 0, 0);
+        exportScene.add(targetCopy);
+        lightCopy.target = targetCopy;
+        exportScene.add(lightCopy);
+
+        // GLB Exporter
+        const exporter = new GLTFExporter();
+        exporter.parse(
+            exportScene,
+            function (result) {
+                saveArrayBuffer(result, 'scene.glb');
+                // Export tamamlandıktan sonra AR viewer'a yönlendir
+                setTimeout(() => {
+                    window.location.href = 'ar-viewer.html';
+                }, 100);
+            },
+            function (error) {
+                console.error('GLB export hatası:', error);
+            },
+            { binary: true }
+        );
+    } catch (error) {
+        console.error('Export işlemi sırasında hata:', error);
+    }
+}
+
+// USDZ export fonksiyonu
+async function exportUSDZ() {
+    try {
+        const exportScene = new THREE.Scene();
+        exportScene.background = scene.background;
+
+        // Tabela kopyala
+        const cubeCopy = sign.clone();
+        exportScene.add(cubeCopy);
+        
+        // Logo kopyala
+        const logoCopy = logo.clone();
+        exportScene.add(logoCopy);
+        
+        // Işığı kopyala
+        const lightCopy = mainLight.clone();
+        const targetCopy = new THREE.Object3D();
+        targetCopy.position.set(0, 0, 0);
+        exportScene.add(targetCopy);
+        lightCopy.target = targetCopy;
+        exportScene.add(lightCopy);
+
+        // USDZ Exporter kullanarak doğrudan USDZ oluştur
+        const exporter = new USDZExporter();
+        const usdzArrayBuffer = await exporter.parse(exportScene);
+        
+        // USDZ dosyasını indir
+        const blob = new Blob([usdzArrayBuffer], { type: 'application/octet-stream' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'scene.usdz';
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        // Export tamamlandıktan sonra AR viewer'a yönlendir
+        setTimeout(() => {
+            window.location.href = 'ar-viewer.html';
+        }, 100);
+
+    } catch (error) {
+        console.error('USDZ export hatası:', error);
+        alert('USDZ export işlemi sırasında bir hata oluştu. Lütfen konsolu kontrol edin.');
+    }
+}
+
+// Array buffer'ı dosya olarak kaydet
+function saveArrayBuffer(buffer, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
