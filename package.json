@@ -15,6 +15,9 @@
     "vite-plugin-restart": "^0.4.1"
   },
   "dependencies": {
+    "@gltf-transform/core": "^4.1.2",
+    "@gltf-transform/extensions": "^4.1.2",
+    "@gltf-transform/functions": "^4.1.2",
     "@webxr-input-profiles/motion-controllers": "^1.0.0",
     "aframe": "^1.7.0",
     "mind-ar": "^1.2.5",

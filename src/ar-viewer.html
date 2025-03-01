@@ -1,105 +1,96 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-    <title>AR Model Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Viewer</title>
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <style>
         body {
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-        }
-
-        .viewer-container {
-            width: 100%;
-            max-width: 800px;
-            height: 600px;
-            margin: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #f0f0f0;
         }
 
         model-viewer {
             width: 100%;
             height: 100%;
             background-color: #ffffff;
-            border-radius: 10px;
         }
 
-        .buttons {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background: #45a049;
-        }
-
-        #fileInput {
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            color: #333;
             display: none;
         }
     </style>
 </head>
 <body>
-    <div class="viewer-container">
+    <div style="height: 100dvh;">
         <model-viewer
             id="modelViewer"
             camera-controls
-            auto-rotate
             ar
             ar-modes="webxr scene-viewer quick-look"
             ios-src=""
-            src=""
-            alt="3D Model">
+            style="display: none;">
         </model-viewer>
     </div>
-
-    <div class="buttons">
-        <input type="file" id="fileInput" accept=".glb,.usdz" multiple>
-        <button onclick="document.getElementById('fileInput').click()">Model Seç</button>
-        <button onclick="window.location.href='index.html'">Editöre Dön</button>
-    </div>
+    <div id="loading">Yükleniyor...</div>
 
     <script>
+        // Firebase yapılandırması
+        const firebaseConfig = {
+            apiKey: "AIzaSyAER3YxmQ3hUoDzPYNXspEpqaKNsGUsTh0",
+            authDomain: "signcreator-b5903.firebaseapp.com",
+            projectId: "signcreator-b5903",
+            storageBucket: "signcreator-b5903.firebasestorage.app",
+            messagingSenderId: "579459817287",
+            appId: "1:579459817287:web:2ee77018e3e1a666f6f662",
+            measurementId: "G-W8LLZ6KE88"
+        };
+
+        // Firebase'i başlat
+        firebase.initializeApp(firebaseConfig);
+
+        // URL parametrelerini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const glbPath = urlParams.get('glb');
+        
+        // Model viewer ve loading elementlerini al
         const modelViewer = document.getElementById('modelViewer');
-        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
 
-        fileInput.addEventListener('change', function(e) {
-            const files = e.target.files;
-            
-            for (let file of files) {
-                const url = URL.createObjectURL(file);
-                
-                if (file.name.endsWith('.glb')) {
-                    modelViewer.src = url;
-                } else if (file.name.endsWith('.usdz')) {
-                    modelViewer.iosSrc = url;
-                }
+        async function init() {
+            try {
+                loading.style.display = 'block';
+
+                // GLB dosyasının URL'ini al
+                const storageRef = firebase.storage().ref();
+                const glbRef = storageRef.child(glbPath);
+                const glbUrl = await glbRef.getDownloadURL();
+
+                // Model viewer'ı ayarla
+                modelViewer.src = glbUrl;
+                modelViewer.style.display = 'block';
+                loading.style.display = 'none';
+            } catch (error) {
+                console.error('Model yükleme hatası:', error);
+                loading.textContent = 'Model yüklenirken bir hata oluştu: ' + error.message;
             }
-        });
+        }
 
-        // Temizlik işlemi
-        window.addEventListener('unload', function() {
-            if (modelViewer.src) URL.revokeObjectURL(modelViewer.src);
-            if (modelViewer.iosSrc) URL.revokeObjectURL(modelViewer.iosSrc);
-        });
+        // Sayfa yüklendiğinde başlat
+        init();
     </script>
 </body>
 </html>

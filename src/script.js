@@ -9,6 +9,21 @@ import texture1 from './assets/textures/metalTexture.jpg';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { log } from 'three/tsl';
 
+// Firebase yapılandırması
+const firebaseConfig = {
+    apiKey: "AIzaSyAER3YxmQ3hUoDzPYNXspEpqaKNsGUsTh0",
+    authDomain: "signcreator-b5903.firebaseapp.com",
+    projectId: "signcreator-b5903",
+    storageBucket: "signcreator-b5903.firebasestorage.app",
+    messagingSenderId: "579459817287",
+    appId: "1:579459817287:web:2ee77018e3e1a666f6f662",
+    measurementId: "G-W8LLZ6KE88"
+  };
+
+// Firebase'i başlat (window.firebase kullanarak)
+window.firebase.initializeApp(firebaseConfig);
+const storage = window.firebase.storage();
+
 // Texture yükleyici
 const textureLoader = new THREE.TextureLoader();
 
@@ -725,70 +740,10 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Export butonunu bul ve event listener ekle
-const exportButton = document.getElementById('exportButton');
-const exportUsdzButton = document.getElementById('exportUsdzButton');
-
-if (exportButton) {
-    exportButton.addEventListener('click', exportGLB);
-} else {
-    console.error('Export butonu bulunamadı!');
-}
-
-if (exportUsdzButton) {
-    exportUsdzButton.addEventListener('click', exportUSDZ);
-} else {
-    console.error('Export USDZ butonu bulunamadı!');
-}
-
 // GLB export fonksiyonu
 async function exportGLB() {
-    const exportScene = new THREE.Scene();
-    exportScene.background = scene.background;
-
     try {
-        // Tabela kopyala
-        const cubeCopy = sign.clone();
-        exportScene.add(cubeCopy);
-        console.log('Küp kopyalandı ve eklendi');
-        
-        // Logo kopyala
-        const logoCopy = logo.clone();
-        exportScene.add(logoCopy);
-        console.log('Logo kopyalandı ve eklendi');
-        
-        // Işığı kopyala ve target'ı ayarla
-        const lightCopy = mainLight.clone();
-        const targetCopy = new THREE.Object3D();
-        targetCopy.position.set(0, 0, 0);
-        exportScene.add(targetCopy);
-        lightCopy.target = targetCopy;
-        exportScene.add(lightCopy);
-
-        // GLB Exporter
-        const exporter = new GLTFExporter();
-        exporter.parse(
-            exportScene,
-            function (result) {
-                saveArrayBuffer(result, 'scene.glb');
-                // Export tamamlandıktan sonra AR viewer'a yönlendir
-                setTimeout(() => {
-                    window.location.href = 'ar-viewer.html';
-                }, 100);
-            },
-            function (error) {
-                console.error('GLB export hatası:', error);
-            },
-            { binary: true }
-        );
-    } catch (error) {
-        console.error('Export işlemi sırasında hata:', error);
-    }
-}
-
-// USDZ export fonksiyonu
-async function exportUSDZ() {
-    try {
+        const timestamp = Date.now();
         const exportScene = new THREE.Scene();
         exportScene.background = scene.background;
 
@@ -800,7 +755,7 @@ async function exportUSDZ() {
         const logoCopy = logo.clone();
         exportScene.add(logoCopy);
         
-        // Işığı kopyala
+        // Işığı kopyala ve target'ı ayarla
         const lightCopy = mainLight.clone();
         const targetCopy = new THREE.Object3D();
         targetCopy.position.set(0, 0, 0);
@@ -808,34 +763,48 @@ async function exportUSDZ() {
         lightCopy.target = targetCopy;
         exportScene.add(lightCopy);
 
-        // USDZ Exporter kullanarak doğrudan USDZ oluştur
-        const exporter = new USDZExporter();
-        const usdzArrayBuffer = await exporter.parse(exportScene);
+        // GLB Exporter
+        const exporter = new GLTFExporter();
+        const glbData = await new Promise((resolve, reject) => {
+            exporter.parse(
+                exportScene,
+                (result) => resolve(result),
+                (error) => reject(error),
+                { binary: true }
+            );
+        });
+
+        // Firebase Storage'a GLB yükle
+        const storageRef = window.firebase.storage().ref();
+        const glbPath = `models/${timestamp}_model.glb`;
+        const glbRef = storageRef.child(glbPath);
+        await glbRef.put(new Blob([glbData]));
+
+        console.log('GLB yüklendi:', glbPath);
         
-        // USDZ dosyasını indir
-        const blob = new Blob([usdzArrayBuffer], { type: 'application/octet-stream' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'scene.usdz';
-        link.click();
-        URL.revokeObjectURL(link.href);
-
-        // Export tamamlandıktan sonra AR viewer'a yönlendir
-        setTimeout(() => {
-            window.location.href = 'ar-viewer.html';
-        }, 100);
-
+        // GLB dosyasını public yap
+        const glbUrl = await glbRef.getDownloadURL();
+        
+        // AR viewer'a yönlendir
+        window.location.href = `ar-viewer.html?glb=${encodeURIComponent(glbPath)}`;
     } catch (error) {
-        console.error('USDZ export hatası:', error);
-        alert('USDZ export işlemi sırasında bir hata oluştu. Lütfen konsolu kontrol edin.');
+        console.error('Export hatası:', error);
+        alert('Export işlemi sırasında bir hata oluştu: ' + error.message);
     }
 }
 
-// Array buffer'ı dosya olarak kaydet
-function saveArrayBuffer(buffer, filename) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([buffer], { type: 'application/octet-stream' }));
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
+// Export butonlarına event listener ekle
+const exportButton = document.getElementById('exportButton');
+const exportUsdzButton = document.getElementById('exportUsdzButton');
+
+if (exportButton) {
+    exportButton.addEventListener('click', exportGLB);
+} else {
+    console.error('Export butonu bulunamadı!');
+}
+
+if (exportUsdzButton) {
+    exportUsdzButton.addEventListener('click', exportGLB);
+} else {
+    console.error('Export USDZ butonu bulunamadı!');
 }
