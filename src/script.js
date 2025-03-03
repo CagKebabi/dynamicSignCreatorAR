@@ -128,7 +128,7 @@ const config = {
     // Işık kontrolleri
     lights: {
         ambient: {
-            intensity: 0.5,
+            intensity: 2,
             color: '#ffffff'
         },
         directional: {
@@ -703,7 +703,7 @@ mainLight.target.position.set(0, 0, 0);
 scene.add(mainLight);
 scene.add(mainLight.target);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0xffffff, 2);
 scene.add(ambientLight);
 //scene.add(ambientLight.target);
 

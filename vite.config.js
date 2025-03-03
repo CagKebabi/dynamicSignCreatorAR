@@ -56,6 +56,7 @@ export default {
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'src/index.html'),
+                arViewer: resolve(__dirname, 'src/ar-viewer.html'),
             },
             output: {
                 assetFileNames: (assetInfo) => {
