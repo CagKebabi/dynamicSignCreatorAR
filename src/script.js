@@ -24,49 +24,144 @@ const firebaseConfig = {
 window.firebase.initializeApp(firebaseConfig);
 const storage = window.firebase.storage();
 
-// Texture yükleyici
+// Texture yükleyici ve GUI oluştur
 const textureLoader = new THREE.TextureLoader();
+const gui = new GUI({ container: document.getElementById('custom-container') });
+
+// GUI klasörleri
+const signFolder = gui.addFolder('Tabela');
+const logoFolder = gui.addFolder('Logo Ayarları');
+const textFolder = gui.addFolder('Yazı');
+const lightsFolder = gui.addFolder('Işıklar');
 
 // Hazır texture listesi
 const textureOptions = {
     none: null,
-    wood: texture1,
-    // wood: './assets/textures/metalTexture.jpg',
-    metal: '/textures/metal.jpg',
-    plastic: '/textures/plastic.jpg',
-    // Daha fazla texture ekleyebilirsiniz
+    brick: texture1,
+    wood: './textures/wood.jpg',
+    metal: './textures/metal.jpg'
 };
 
-// Texture ayarları için konfigürasyon
+// Texture seçimi için GUI kontrolü
 const textureConfig = {
-    currentTexture: 'none',
-    repeat: {
-        x: 1,
-        y: 1
-    },
-    offset: {
-        x: 0,
-        y: 0
-    },
+    selectedTexture: 'none',
+    repeat: { x: 1, y: 1 },
+    offset: { x: 0, y: 0 },
     rotation: 0,
-    transparent: false,
-    opacity: 1.0,
-    // Normal map ayarları
-    useNormalMap: false,
-    normalMap: 'none',
-    normalScale: {
-        x: 1,
-        y: 1
-    },
-    // Roughness map ayarları
-    useRoughnessMap: false,
-    roughnessMap: 'none',
-    roughness: 0.5,
-    // Metalness ayarları
-    useMetalnessMap: false,
-    metalnessMap: 'none',
-    metalness: 0.5
+    normalScale: { x: 1, y: 1 }
 };
+
+// GUI'ye texture seçimi ekle
+signFolder.add(textureConfig, 'selectedTexture', Object.keys(textureOptions)).onChange((value) => {
+    if (value === 'none') {
+        sign.material.map = null;
+        sign.material.needsUpdate = true;
+        return;
+    }
+    
+    textureLoader.load(textureOptions[value], (texture) => {
+        texture.repeat.set(textureConfig.repeat.x, textureConfig.repeat.y);
+        texture.offset.set(textureConfig.offset.x, textureConfig.offset.y);
+        texture.rotation = textureConfig.rotation;
+        texture.encoding = THREE.sRGBEncoding;
+        
+        sign.material.map = texture;
+        sign.material.needsUpdate = true;
+    });
+});
+
+// Texture ayarları için GUI kontrolleri
+const textureFolder = signFolder.addFolder('Texture Ayarları');
+textureFolder.add(textureConfig.repeat, 'x', 0.1, 10).name('Repeat X').onChange(updateTextureRepeat);
+textureFolder.add(textureConfig.repeat, 'y', 0.1, 10).name('Repeat Y').onChange(updateTextureRepeat);
+textureFolder.add(textureConfig.offset, 'x', -1, 1).name('Offset X').onChange(updateTextureOffset);
+textureFolder.add(textureConfig.offset, 'y', -1, 1).name('Offset Y').onChange(updateTextureOffset);
+textureFolder.add(textureConfig, 'rotation', 0, Math.PI * 2).name('Rotation').onChange(updateTextureRotation);
+
+// Texture güncelleme fonksiyonları
+function updateTextureRepeat() {
+    if (sign.material.map) {
+        sign.material.map.repeat.set(textureConfig.repeat.x, textureConfig.repeat.y);
+        sign.material.map.needsUpdate = true;
+    }
+}
+
+function updateTextureOffset() {
+    if (sign.material.map) {
+        sign.material.map.offset.set(textureConfig.offset.x, textureConfig.offset.y);
+        sign.material.map.needsUpdate = true;
+    }
+}
+
+function updateTextureRotation() {
+    if (sign.material.map) {
+        sign.material.map.rotation = textureConfig.rotation;
+        sign.material.map.needsUpdate = true;
+    }
+}
+
+// Texture yükleme işlemleri için event listener'lar
+document.getElementById('uploadTextureButton').addEventListener('click', () => {
+    document.getElementById('textureInput').click();
+});
+
+let currentLogoTexture = null;
+
+document.getElementById('textureInput').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Mevcut logo texture'ını dispose et
+            if (currentLogoTexture) {
+                currentLogoTexture.dispose();
+            }
+            
+            // Yeni logo texture'ını yükle
+            currentLogoTexture = textureLoader.load(e.target.result, (texture) => {
+                texture.encoding = THREE.sRGBEncoding;
+                texture.flipY = false; // Three.js'de texture'ın ters dönmesini önle
+                
+                // Logo materyalini güncelle
+                logo.material.map = texture;
+                logo.material.needsUpdate = true;
+                
+                // GUI'ye logo texture kontrollerini ekle
+                if (!logoFolder.__controllers.find(c => c.property === 'textureRepeatX')) {
+                    const textureControls = {
+                        textureRepeatX: 1,
+                        textureRepeatY: 1,
+                        textureRotation: 0,
+                        textureOffsetX: 0,
+                        textureOffsetY: 0
+                    };
+                    
+                    logoFolder.add(textureControls, 'textureRepeatX', 0.1, 5).onChange((value) => {
+                        texture.repeat.x = value;
+                        texture.needsUpdate = true;
+                    });
+                    logoFolder.add(textureControls, 'textureRepeatY', 0.1, 5).onChange((value) => {
+                        texture.repeat.y = value;
+                        texture.needsUpdate = true;
+                    });
+                    logoFolder.add(textureControls, 'textureRotation', 0, Math.PI * 2).onChange((value) => {
+                        texture.rotation = value;
+                        texture.needsUpdate = true;
+                    });
+                    logoFolder.add(textureControls, 'textureOffsetX', -1, 1).onChange((value) => {
+                        texture.offset.x = value;
+                        texture.needsUpdate = true;
+                    });
+                    logoFolder.add(textureControls, 'textureOffsetY', -1, 1).onChange((value) => {
+                        texture.offset.y = value;
+                        texture.needsUpdate = true;
+                    });
+                }
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+});
 
 // Kontrol paneli için konfigürasyon objesi
 const config = {
@@ -94,7 +189,7 @@ const config = {
         metalness: 0.5,
         rotation: {
             x: Math.PI / 2,
-            y: 0,
+            y: -Math.PI / 2,
             z: 0
         },
         position: {
@@ -152,191 +247,101 @@ const config = {
     }
 };
 
-// GUI oluştur
-const gui = new GUI();
+// GUI kontrolleri
+lightsFolder.addColor(config.lights.ambient, 'color').onChange(updateAmbientLight);
+lightsFolder.add(config.lights.ambient, 'intensity', 0, 5).onChange(updateAmbientLight);
+lightsFolder.addColor(config.lights.directional, 'color').onChange(updateDirectionalLight);
+lightsFolder.add(config.lights.directional, 'intensity', 0, 5).onChange(updateDirectionalLight);
+lightsFolder.addColor(config.lights.point, 'color').onChange(updatePointLight);
+lightsFolder.add(config.lights.point, 'intensity', 0, 5).onChange(updatePointLight);
 
-// GUI'ye texture kontrollerini ekle
-function addTextureControls(gui, material) {
-    const textureFolder = gui.addFolder('Texture Ayarları');
+textFolder.add(config.text, 'content').onChange(updateText);
+textFolder.add(config.text, 'size', 0.1, 2).onChange(updateText);
+textFolder.add(config.text, 'height', 0.01, 0.5).onChange(updateText);
+textFolder.addColor(config.text, 'color').onChange(updateTextMaterial);
 
-    // Texture seçimi
-    textureFolder.add(textureConfig, 'currentTexture', Object.keys(textureOptions))
-        .name('Texture')
-        .onChange((value) => {
-            if (value === 'none') {
-                material.map = null;
-            } else {
-                textureLoader.load(textureOptions[value], (texture) => {
-                    material.map = texture;
-                    // Mevcut repeat ve offset değerlerini uygula
-                    texture.repeat.set(textureConfig.repeat.x, textureConfig.repeat.y);
-                    texture.offset.set(textureConfig.offset.x, textureConfig.offset.y);
-                    texture.rotation = textureConfig.rotation;
-                    material.needsUpdate = true;
-                });
-            }
-        });
+// Scene oluştur
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x262626);
 
-    // Repeat kontrolü
-    const repeatFolder = textureFolder.addFolder('Repeat');
-    repeatFolder.add(textureConfig.repeat, 'x', 0.1, 10).onChange(updateTextureRepeat);
-    repeatFolder.add(textureConfig.repeat, 'y', 0.1, 10).onChange(updateTextureRepeat);
+// Kamera oluştur
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
 
-    // Offset kontrolü
-    const offsetFolder = textureFolder.addFolder('Offset');
-    offsetFolder.add(textureConfig.offset, 'x', -1, 1).onChange(updateTextureOffset);
-    offsetFolder.add(textureConfig.offset, 'y', -1, 1).onChange(updateTextureOffset);
+// Temel geometri ve mesh'leri oluştur
+const signGeometry = new THREE.BoxGeometry(config.sign.width, config.sign.height, config.sign.depth);
+const signMaterial = new THREE.MeshStandardMaterial({
+    color: config.sign.color,
+    metalness: 0.5,
+    roughness: 0.5,
+    side: THREE.DoubleSide
+});
+const sign = new THREE.Mesh(signGeometry, signMaterial);
+scene.add(sign);
 
-    // Rotation kontrolü
-    textureFolder.add(textureConfig, 'rotation', 0, Math.PI * 2)
-        .onChange(updateTextureRotation);
+// Renderer oluştur
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio); // Pixel ratio ayarı
 
-    // Transparency kontrolü
-    textureFolder.add(textureConfig, 'transparent')
-        .onChange((value) => {
-            material.transparent = value;
-            material.needsUpdate = true;
-        });
-
-    textureFolder.add(textureConfig, 'opacity', 0, 1)
-        .onChange((value) => {
-            material.opacity = value;
-            material.needsUpdate = true;
-        });
-
-    // Normal map kontrolü
-    const normalMapFolder = textureFolder.addFolder('Normal Map');
-    normalMapFolder.add(textureConfig, 'useNormalMap')
-        .onChange((value) => {
-            if (!value) {
-                material.normalMap = null;
-            } else if (textureConfig.normalMap !== 'none') {
-                loadNormalMap(textureConfig.normalMap);
-            }
-            material.needsUpdate = true;
-        });
-
-    normalMapFolder.add(textureConfig, 'normalMap', Object.keys(textureOptions))
-        .onChange((value) => {
-            if (textureConfig.useNormalMap && value !== 'none') {
-                loadNormalMap(value);
-            }
-        });
-
-    const normalScaleFolder = normalMapFolder.addFolder('Normal Scale');
-    normalScaleFolder.add(textureConfig.normalScale, 'x', 0, 2)
-        .onChange((value) => {
-            if (material.normalMap) {
-                material.normalScale.x = value;
-            }
-        });
-    normalScaleFolder.add(textureConfig.normalScale, 'y', 0, 2)
-        .onChange((value) => {
-            if (material.normalMap) {
-                material.normalScale.y = value;
-            }
-        });
-
-    // Roughness kontrolü
-    const roughnessFolder = textureFolder.addFolder('Roughness');
-    roughnessFolder.add(textureConfig, 'useRoughnessMap')
-        .onChange((value) => {
-            if (!value) {
-                material.roughnessMap = null;
-            } else if (textureConfig.roughnessMap !== 'none') {
-                loadRoughnessMap(textureConfig.roughnessMap);
-            }
-            material.needsUpdate = true;
-        });
-
-    roughnessFolder.add(textureConfig, 'roughnessMap', Object.keys(textureOptions))
-        .onChange((value) => {
-            if (textureConfig.useRoughnessMap && value !== 'none') {
-                loadRoughnessMap(value);
-            }
-        });
-
-    roughnessFolder.add(textureConfig, 'roughness', 0, 1)
-        .onChange((value) => {
-            material.roughness = value;
-            material.needsUpdate = true;
-        });
-
-    // Metalness kontrolü
-    const metalnessFolder = textureFolder.addFolder('Metalness');
-    metalnessFolder.add(textureConfig, 'useMetalnessMap')
-        .onChange((value) => {
-            if (!value) {
-                material.metalnessMap = null;
-            } else if (textureConfig.metalnessMap !== 'none') {
-                loadMetalnessMap(textureConfig.metalnessMap);
-            }
-            material.needsUpdate = true;
-        });
-
-    metalnessFolder.add(textureConfig, 'metalnessMap', Object.keys(textureOptions))
-        .onChange((value) => {
-            if (textureConfig.useMetalnessMap && value !== 'none') {
-                loadMetalnessMap(value);
-            }
-        });
-
-    metalnessFolder.add(textureConfig, 'metalness', 0, 1)
-        .onChange((value) => {
-            material.metalness = value;
-            material.needsUpdate = true;
-        });
-}
-
-// Texture güncelleme fonksiyonları
-function updateTextureRepeat() {
-    if (material.map) {
-        material.map.repeat.set(textureConfig.repeat.x, textureConfig.repeat.y);
-        material.map.needsUpdate = true;
+function updateRendererSize() {
+    const container = document.getElementById('canvas-container');
+    const containerHeight = window.innerWidth < 768 ? window.innerHeight * 0.5 : window.innerHeight;
+    
+    // Renderer boyutunu güncelle
+    const width = container.clientWidth;
+    const height = containerHeight;
+    const needResize = renderer.domElement.width !== width || renderer.domElement.height !== height;
+    
+    if (needResize) {
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        console.log("Canvas boyutu güncellendi:", width, "x", height, "Pixel Ratio:", window.devicePixelRatio);
     }
+    
+    return needResize;
 }
 
-function updateTextureOffset() {
-    if (material.map) {
-        material.map.offset.set(textureConfig.offset.x, textureConfig.offset.y);
-        material.map.needsUpdate = true;
-    }
-}
+// İlk boyutlandırma
+updateRendererSize();
 
-function updateTextureRotation() {
-    if (material.map) {
-        material.map.rotation = textureConfig.rotation;
-        material.map.needsUpdate = true;
-    }
-}
+// Pencere boyutu değiştiğinde güncelle
+window.addEventListener('resize', updateRendererSize);
 
-// Map yükleme fonksiyonları
-function loadNormalMap(mapName) {
-    textureLoader.load(textureOptions[mapName], (texture) => {
-        material.normalMap = texture;
-        material.normalScale.set(textureConfig.normalScale.x, textureConfig.normalScale.y);
-        material.needsUpdate = true;
-    });
-}
+document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-function loadRoughnessMap(mapName) {
-    textureLoader.load(textureOptions[mapName], (texture) => {
-        material.roughnessMap = texture;
-        material.needsUpdate = true;
-    });
-}
+// Orbit controls ekle
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
 
-function loadMetalnessMap(mapName) {
-    textureLoader.load(textureOptions[mapName], (texture) => {
-        material.metalnessMap = texture;
-        material.needsUpdate = true;
-    });
-}
+// Tabela Logosu için geometri oluşturma
+const logoGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 32); // Çap: 0.7, Derinlik: 0.2
+const logoMaterial = new THREE.MeshStandardMaterial({
+    color: config.logo.color,
+    roughness: 0.5,
+    metalness: 0.5
+});
 
-//---------------------------------
+// Logo geometrisini merkezde oluştur
+logoGeometry.scale(1, 1, 1); // Başlangıç ölçeği 1 olsun, GUI ile kontrol edeceğiz
+
+// Logo mesh'ini oluştur
+const logo = new THREE.Mesh(logoGeometry, logoMaterial);
+
+// Logo'yu istenen pozisyona taşı
+logo.position.set(config.logo.position.x, config.logo.position.y, config.logo.position.z);
+// Başlangıç scale değerlerini ayarla
+logo.scale.set(config.logo.scale.x, config.logo.scale.y, config.logo.scale.z);
+logo.rotation.set(
+    config.logo.rotation.x,
+    config.logo.rotation.y,
+    config.logo.rotation.z
+);
+
+scene.add(logo);
 
 // Tabela kontrolleri
-const signFolder = gui.addFolder('Tabela');
 signFolder.add(config.sign, 'width', 1, 10).onChange(updateSignGeometry);
 signFolder.add(config.sign, 'height', 1, 10).onChange(updateSignGeometry);
 signFolder.add(config.sign, 'depth', 0.1, 2).onChange(updateSignGeometry);
@@ -344,7 +349,6 @@ signFolder.addColor(config.sign, 'color').onChange(updateSignMaterial);
 signFolder.add(config.sign, 'shininess', 0, 100).onChange(updateSignMaterial);
 
 // Logo kontrolleri
-const logoFolder = gui.addFolder('Logo');
 logoFolder.addColor(config.logo, 'color').onChange(updateLogoMaterial);
 logoFolder.add(config.logo, 'roughness', 0, 1).onChange(updateLogoMaterial);
 logoFolder.add(config.logo, 'metalness', 0, 1).onChange(updateLogoMaterial);
@@ -380,11 +384,10 @@ signRotationFolder.add(config.sign.rotation, 'y', -Math.PI, Math.PI).onChange(up
 signRotationFolder.add(config.sign.rotation, 'z', -Math.PI, Math.PI).onChange(updateSignRotation);
 
 // Yazı kontrolleri
-const textFolder = gui.addFolder('Yazı');
-textFolder.add(config.text, 'content').onChange(updateText);
-textFolder.add(config.text, 'size', 0.1, 2).onChange(updateText);
-textFolder.add(config.text, 'height', 0.01, 0.5).onChange(updateText);
-textFolder.addColor(config.text, 'color').onChange(updateTextMaterial);
+// textFolder.add(config.text, 'content').onChange(updateText);
+// textFolder.add(config.text, 'size', 0.1, 2).onChange(updateText);
+// textFolder.add(config.text, 'height', 0.01, 0.5).onChange(updateText);
+// textFolder.addColor(config.text, 'color').onChange(updateTextMaterial);
 
 // Yazı pozisyon kontrolleri
 const textPositionFolder = textFolder.addFolder('Pozisyon');
@@ -399,22 +402,22 @@ textScaleFolder.add(config.text.scale, 'y', 0.1, 2).onChange(updateTextScale);
 textScaleFolder.add(config.text.scale, 'z', 0.001, 0.1).onChange(updateTextScale);
 
 // Işık kontrolleri
-const lightsFolder = gui.addFolder('Işıklar');
+// const lightsFolder = gui.addFolder('Işıklar');
 
 // Ambient ışık kontrolleri
-const ambientLightFolder = lightsFolder.addFolder('Ambient Işık');
-ambientLightFolder.add(config.lights.ambient, 'intensity', 0, 2).onChange(updateAmbientLight);
-ambientLightFolder.addColor(config.lights.ambient, 'color').onChange(updateAmbientLight);
+// const ambientLightFolder = lightsFolder.addFolder('Ambient Işık');
+// ambientLightFolder.add(config.lights.ambient, 'intensity', 0, 2).onChange(updateAmbientLight);
+// ambientLightFolder.addColor(config.lights.ambient, 'color').onChange(updateAmbientLight);
 
 // Directional ışık kontrolleri
-const directionalLightFolder = lightsFolder.addFolder('Directional Işık');
-directionalLightFolder.add(config.lights.directional, 'intensity', 0, 2).onChange(updateDirectionalLight);
-directionalLightFolder.addColor(config.lights.directional, 'color').onChange(updateDirectionalLight);
+// const directionalLightFolder = lightsFolder.addFolder('Directional Işık');
+// directionalLightFolder.add(config.lights.directional, 'intensity', 0, 2).onChange(updateDirectionalLight);
+// directionalLightFolder.addColor(config.lights.directional, 'color').onChange(updateDirectionalLight);
 
 // Point ışık kontrolleri
-const pointLightFolder = lightsFolder.addFolder('Point Işık');
-pointLightFolder.add(config.lights.point, 'intensity', 0, 2).onChange(updatePointLight);
-pointLightFolder.addColor(config.lights.point, 'color').onChange(updatePointLight);
+// const pointLightFolder = lightsFolder.addFolder('Point Işık');
+// pointLightFolder.add(config.lights.point, 'intensity', 0, 2).onChange(updatePointLight);
+// pointLightFolder.addColor(config.lights.point, 'color').onChange(updatePointLight);
 
 // Update fonksiyonları
 function updateSignGeometry() {
@@ -549,99 +552,7 @@ function updatePointLight() {
     pointLight.color.setStyle(config.lights.point.color);
 }
 
-
-// Scene oluştur
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-
-// Camera oluştur
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
-
-// Renderer oluştur
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-// Orbit controls ekle
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-
-// Tabela için geometri oluşturma
-const signGeometry = new THREE.BoxGeometry(6.5, 2, 0.2);
-// const signMaterial = new THREE.MeshPhongMaterial({ 
-//     color: 0x2244aa,
-//     specular: 0x555555,
-//     shininess: 30
-// });
-const material = new THREE.MeshStandardMaterial({ 
-    color: config.sign.color,
-    roughness: textureConfig.roughness,
-    metalness: textureConfig.metalness
-});
-const sign = new THREE.Mesh(signGeometry, material);
-scene.add(sign);
-
-// Tabela Logosu için geometri oluşturma
-const logoGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 32); // Çap: 0.7, Derinlik: 0.2
-const logoMaterial = new THREE.MeshStandardMaterial({
-    color: config.logo.color,
-    roughness: textureConfig.roughness,
-    metalness: textureConfig.metalness
-});
-
-// Logo geometrisini merkezde oluştur
-logoGeometry.scale(1, 1, 1); // Başlangıç ölçeği 1 olsun, GUI ile kontrol edeceğiz
-
-// Logo mesh'ini oluştur
-const logo = new THREE.Mesh(logoGeometry, logoMaterial);
-
-// Logo'yu istenen pozisyona taşı
-logo.position.set(config.logo.position.x, config.logo.position.y, config.logo.position.z);
-// Başlangıç scale değerlerini ayarla
-logo.scale.set(config.logo.scale.x, config.logo.scale.y, config.logo.scale.z);
-logo.rotation.set(
-    config.logo.rotation.x,
-    config.logo.rotation.y,
-    config.logo.rotation.z
-);
-
-scene.add(logo);
-
-// GUI'ye texture kontrollerini ekle
-addTextureControls(gui, material);
-
 // Font yükleme ve text oluşturma
-// const loader = new FontLoader();
-// loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
-//     const textGeometry = new TextGeometry('MARKET', {
-//         font: font,
-//         size: 0.8,
-//         height: 0.05,  // Derinliği azalttık
-//         curveSegments: 12,
-//         bevelEnabled: true,
-//         bevelThickness: 0.01,  // Bevel kalınlığını azalttık
-//         bevelSize: 0.01,      // Bevel boyutunu azalttık
-//         bevelSegments: 3
-//     });
-    
-//     const textMaterial = new THREE.MeshPhongMaterial({ 
-//         color: 0xffffff,
-//         specular: 0x444444
-//     });
-//     const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-    
-//     // Yazıyı merkeze hizalama
-//     textGeometry.computeBoundingBox();
-//     const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
-//     textMesh.position.x = -textWidth / 2;
-//     textMesh.position.y = -0.3;
-//     textMesh.position.z = 0;
-    
-//     sign.add(textMesh);
-// });
-
 let currentFont
 
 const loader = new FontLoader();
@@ -725,23 +636,29 @@ scene.add(pointLight);
 // Animasyon döngüsü
 function animate() {
     requestAnimationFrame(animate);
-    //sign.rotation.x += 0.01;
-    //sign.rotation.y += 0.01;
+    
+    // Her frame'de boyut kontrolü
+    if (updateRendererSize()) {
+        console.log("Canvas yeniden boyutlandırıldı");
+    }
+    
     controls.update();
     renderer.render(scene, camera);
 }
 animate();
 
 // Pencere yeniden boyutlandırma
-window.addEventListener('resize', onWindowResize, false);
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
+// window.addEventListener('resize', onWindowResize, false);
+// function onWindowResize() {
+//     camera.aspect = window.innerWidth / window.innerHeight;
+//     camera.updateProjectionMatrix();
+//     renderer.setSize(window.innerWidth, window.innerHeight);
+// }
 
 // GLB export fonksiyonu
 async function exportGLB() {
+    console.log('GLB yükleniyor...');
+    
     try {
         const timestamp = Date.now();
         const exportScene = new THREE.Scene();
@@ -763,6 +680,8 @@ async function exportGLB() {
         lightCopy.target = targetCopy;
         exportScene.add(lightCopy);
 
+        console.log('Model hazırlanıyor...');
+
         // GLB Exporter
         const exporter = new GLTFExporter();
         const glbData = await new Promise((resolve, reject) => {
@@ -774,6 +693,10 @@ async function exportGLB() {
             );
         });
 
+        console.log('Model dışa aktarıldı, Firebase\'e yükleniyor...');
+        document.getElementById('exportButton').innerText = 'Model Yükleniyor...';
+        document.getElementById('exportButton').disabled = true;
+
         // Firebase Storage'a GLB yükle
         const storageRef = window.firebase.storage().ref();
         const glbPath = `models/${timestamp}_model.glb`;
@@ -784,6 +707,7 @@ async function exportGLB() {
         
         // GLB dosyasını public yap
         const glbUrl = await glbRef.getDownloadURL();
+        console.log('Model URL hazır:', glbUrl);
         
         // AR viewer'a yönlendir
         window.location.href = `ar-viewer.html?glb=${encodeURIComponent(glbPath)}`;

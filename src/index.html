@@ -2,8 +2,9 @@
 <html lang="tr">
 <head>
     <title>Dynamic Sign Creator AR</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <!-- Firebase SDK'larını ekleyelim -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <style>
@@ -11,20 +12,24 @@
             margin: 0;
             overflow: hidden;
         }
-        #exportButton {
+        .button-container {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            font-size: 16px;
+        }
+        .button-container button {
             padding: 10px 20px;
             background: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
         }
-        #exportButton:hover {
+        .button-container button:hover {
             background: #45a049;
         }
         #exportUsdzButton {
@@ -64,6 +69,7 @@
             font-weight: bold;
             font-size: 14px;
             padding: 8px;
+            height: auto;
             border-radius: 8px 8px 0 0;
         }
 
@@ -95,23 +101,252 @@
         }
 
         /* GUI Container konumlandırma */
-        #gui-container {
+        /* #gui-container {
             position: fixed;
             top: 10px;
             right: 10px;
             z-index: 1000;
+        } */
+
+        #custom-container > .lil-gui {
+            position: fixed;
+            top: 0;
+            right: 16px;
+            max-height: 100%;
+            overflow-y: auto;
+            margin-right: 0;
+            --width: 280px;
+        }
+        
+        @media screen and (max-width: 768px) {
+            body {
+                background-color: #262626;
+            }
+            /*GUI MOILE*/
+            #custom-container {
+                height: 50dvh;
+            }
+            #custom-container > .lil-gui {
+                height: 100% !important;
+                position: static !important;
+                width: 100% !important;
+            }
+            /*CANVAS MOBILE*/
+            #canvas-container-wrapper {
+                height: 50dvh;
+            }
+            #canvas-container canvas {
+                height: 50dvh !important;
+            }
+            .button-container {
+                bottom: 52%;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
         }
     </style>
     <script type="module" src="/script.js"></script>
 </head>
 <body>
-    <div id="gui-container"></div>
-    <div class="button-container">
-        <button id="exportButton">GLB Olarak Export Et</button>
-        <button id="exportUsdzButton">USDZ Olarak Export Et</button>
+    
+    <div id="canvas-container-wrapper">
+        <div id="canvas-container">
+
+        </div>
+        <div class="button-container">
+            <input type="file" id="textureInput" accept="image/*" style="display: none;">
+            <button id="uploadTextureButton">Logo Resmi Yükle</button>
+            <button id="exportButton">AR İle Görüntüle</button>
+            <!-- <button id="exportUsdzButton">USDZ Olarak Export Et</button> -->
+        </div>
     </div>
+    
+    <div id="custom-container"></div>
     <script>
         
     </script>
 </body>
 </html>
+
+
+<!-- <!DOCTYPE html>
+<html>
+  <head>
+    <title>AR with A-Frame</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-ar.js"></script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene webxr="optionalFeatures: hit-test;" arjs="sourceType: webcam;" renderer="colorManagement: true;">
+      <a-camera position="0 1.6 0"></a-camera>
+      <a-entity id="marker" geometry="primitive: box" material="color: red;"></a-entity>
+    </a-scene>
+    
+    <script>
+      navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] })
+        .then((session) => {
+          console.log("WebXR AR oturumu başladı!");
+        }).catch((err) => {
+          console.error("WebXR desteklenmiyor veya hata oluştu:", err);
+        });
+
+        if ('xr' in navigator) {
+  navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] })
+    .then((session) => {
+      console.log("WebXR AR oturumu başladı!");
+    }).catch((err) => {
+      console.error("WebXR desteklenmiyor veya hata oluştu:", err);
+    });
+} else {
+  console.warn("Bu tarayıcı WebXR'yi desteklemiyor.");
+}
+    </script>
+  </body>
+</html> -->
+
+
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web AR GLB Görüntüleyici</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/model-viewer/1.10.1/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .ar-view {
+            flex: 1;
+            width: 100%;
+            background-color: #f0f0f0;
+        }
+        
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #f5f5f5;
+        }
+        
+        .controls {
+            padding: 15px;
+            background-color: #eaeaea;
+            display: flex;
+            justify-content: center;
+        }
+        
+        button {
+            margin: 0 10px;
+            padding: 8px 15px;
+            border: none;
+            background-color: #4285f4;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>3D GLB Modellerini AR ile Görüntüleyin</h2>
+        </div>
+        
+        <div class="ar-view">
+            <model-viewer
+                src="./assets/catalog/3d_floor_plan_3.glb"
+                ios-src=""
+                alt="3D Model"
+                auto-rotate
+                camera-controls
+                ar
+                ar-modes="webxr scene-viewer quick-look"
+                environment-image="neutral"
+                shadow-intensity="1"
+                exposure="1">
+                
+                <button slot="ar-button" style="background-color: #00823b; color: white; border-radius: 4px; border: none; position: absolute; bottom: 20px; right: 20px; padding: 10px;">
+                    👁️ AR'de Görüntüle
+                </button>
+            </model-viewer>
+        </div>
+        
+        <div class="controls">
+            <button id="rotate">Döndürmeyi Başlat/Durdur</button>
+            <button id="zoom-in">Yakınlaştır</button>
+            <button id="zoom-out">Uzaklaştır</button>
+        </div>
+    </div>
+    
+    <script>
+        // Kontroller için etkileşimli öğeleri seçin
+        const modelViewer = document.querySelector('model-viewer');
+        const rotateButton = document.getElementById('rotate');
+        const zoomInButton = document.getElementById('zoom-in');
+        const zoomOutButton = document.getElementById('zoom-out');
+        
+        // Otomatik döndürme durumunu izleme
+        let autoRotate = true;
+        
+        // Döndürme kontrolü
+        rotateButton.addEventListener('click', () => {
+            autoRotate = !autoRotate;
+            modelViewer.autoRotate = autoRotate;
+        });
+        
+        // Yakınlaştırma kontrolü
+        zoomInButton.addEventListener('click', () => {
+            const orbit = modelViewer.getCameraOrbit();
+            modelViewer.cameraOrbit = `${orbit.theta}deg ${orbit.phi}deg ${Math.max(orbit.radius - 0.5, 1)}m`;
+        });
+        
+        // Uzaklaştırma kontrolü
+        zoomOutButton.addEventListener('click', () => {
+            const orbit = modelViewer.getCameraOrbit();
+            modelViewer.cameraOrbit = `${orbit.theta}deg ${orbit.phi}deg ${orbit.radius + 0.5}m`;
+        });
+        
+        // Sayfa yüklendiğinde
+        window.addEventListener('load', () => {
+            console.log('AR deneyimi hazır');
+            
+            // Cihaz özelliklerini kontrol et
+            const checkARSupport = () => {
+                if (navigator.xr) {
+                    navigator.xr.isSessionSupported('immersive-ar')
+                        .then((supported) => {
+                            if (supported) {
+                                console.log('WebXR AR destekleniyor!');
+                            } else {
+                                console.log('WebXR AR desteklenmiyor');
+                            }
+                        });
+                } else {
+                    console.log('WebXR desteklenmiyor');
+                }
+            };
+            
+            checkARSupport();
+        });
+    </script>
+</body>
+</html> -->
