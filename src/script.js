@@ -120,10 +120,15 @@ document.getElementById('textureInput').addEventListener('change', (event) => {
             // Yeni logo texture'ını yükle
             currentLogoTexture = textureLoader.load(e.target.result, (texture) => {
                 texture.encoding = THREE.sRGBEncoding;
-                texture.flipY = false; // Three.js'de texture'ın ters dönmesini önle
+                texture.flipY = true; // Logo texture'ının doğru yönde görünmesi için
                 
                 // Logo materyalini güncelle
                 logo.material.map = texture;
+                logo.material.transparent = false;
+                logo.material.alphaTest = 0.5;
+                logo.material.blending = THREE.NormalBlending;
+                logo.material.opacity = 1;
+                logo.material.color.set('#ffffff'); // Beyaz renk ayarı
                 logo.material.needsUpdate = true;
                 
                 // GUI'ye logo texture kontrollerini ekle
@@ -170,7 +175,7 @@ const config = {
         width: 6.5,
         height: 2,
         depth: 0.2,
-        color: '#2244aa',
+        color: '#ff5900',
         shininess: 30,
         rotation: {
             x: 0,
@@ -189,7 +194,7 @@ const config = {
         metalness: 0.5,
         rotation: {
             x: Math.PI / 2,
-            y: -Math.PI / 2,
+            y: Math.PI / 2,
             z: 0
         },
         position: {
@@ -340,6 +345,20 @@ logo.rotation.set(
 );
 
 scene.add(logo);
+
+//logo geometrisinin texture giydirilmemiş olanı
+const logo2 = new THREE.Mesh(logoGeometry, logoMaterial);
+
+// Logo'yu istenen pozisyona taşı
+logo2.position.set(config.logo.position.x, config.logo.position.y, config.logo.position.z);
+// Başlangıç scale değerlerini ayarla
+logo2.scale.set(config.logo.scale.x, config.logo.scale.y, config.logo.scale.z);
+logo2.rotation.set(
+    config.logo.rotation.x,
+    config.logo.rotation.y,
+    config.logo.rotation.z
+);
+scene.add(logo2);
 
 // Tabela kontrolleri
 signFolder.add(config.sign, 'width', 1, 10).onChange(updateSignGeometry);
